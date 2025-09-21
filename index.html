@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dummy test website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #1db954;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .content {
+            background-color: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #1db954;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background-color: #1ed760;
+        }
+        #tokens {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: 3px;
+            word-break: break-all;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>spotify auth redirect</h1>
+    </header>
+    <main>
+        <section id="processing" class="content">
+            <h2>Processing Authorization...</h2>
+            <p>Extracting access token from URL...</p>
+        </section>
+        <section id="error" class="content error" style="display: none;">
+            <h2>Error</h2>
+            <p id="error-message"></p>
+        </section>
+        <section id="success" class="content success" style="display: none;">
+            <h2>Success!</h2>
+            <p>Access token extracted successfully.</p>
+            <div id="tokens"></div>
+            <button onclick="copyTokens()">Copy Tokens</button>
+            <button onclick="clearTokens()">Clear</button>
+        </section>
+    </main>
+    <script>
+        // Extract tokens from URL hash or query parameters
+        function extractTokens() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash || window.location.search);
+            
+            const accessToken = params.get('access_token');
+            const tokenType = params.get('token_type');
+            const expiresIn = params.get('expires_in');
+            const refreshToken = params.get('refresh_token');
+            const error = params.get('error');
+            const errorDescription = params.get('error_description');
+            
+            if (error) {
+                document.getElementById('error-message').textContent = `Error: ${error} - ${errorDescription}`;
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('processing').style.display = 'none';
+                return;
+            }
+            
+            if (accessToken) {
+                const tokensInfo = {
+                    access_token: accessToken,
+                    token_type: tokenType || 'Bearer',
+                    expires_in: expiresIn || 3600,
+                    refresh_token: refreshToken || 'N/A'
+                };
+                
+                document.getElementById('tokens').innerHTML = 
+                    `<strong>Access Token:</strong> ${tokensInfo.access_token}<br>` +
+                    `<strong>Token Type:</strong> ${tokensInfo.token_type}<br>` +
+                    `<strong>Expires In:</strong> ${tokensInfo.expires_in} seconds<br>` +
+                    `<strong>Refresh Token:</strong> ${tokensInfo.refresh_token}`;
+                
+                document.getElementById('success').style.display = 'block';
+                document.getElementById('processing').style.display = 'none';
+                return tokensInfo;
+            } else {
+                document.getElementById('error-message').textContent = 'No access token found in URL. Make sure you completed the authorization flow correctly.';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('processing').style.display = 'none';
+            }
+        }
+        
+        function copyTokens() {
+            const tokensText = document.getElementById('tokens').textContent;
+            navigator.clipboard.writeText(tokensText).then(() => {
+                alert('Tokens copied to clipboard!');
+            });
+        }
+        
+        function clearTokens() {
+            window.location.hash = '';
+            window.location.search = '';
+            document.getElementById('success').style.display = 'none';
+            document.getElementById('processing').style.display = 'block';
+            extractTokens(); // Re-extract to handle cleared URL
+        }
+        
+        // Extract tokens on page load
+        window.addEventListener('load', extractTokens);
+    </script>
+</body>
+</html>
